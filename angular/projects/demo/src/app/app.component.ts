@@ -125,7 +125,7 @@ export class AppComponent {
 
   onWrapperAddNode(): void {
     if (this.wrapperTree) {
-      const newId = this.wrapperTree.createNode('#', { text: 'New Node' });
+      const newId = this.wrapperTree.addNode('#', { text: 'New Node' });
       this._log(this.wrapperLog, `created node id=${newId}`);
     }
   }
@@ -165,7 +165,7 @@ export class AppComponent {
         action: (data) => {
           const tree = this.wrapperTree;
           if (tree) {
-            tree.createNode(data.reference.id || '#', { text: 'New Node' });
+            tree.addNode(data.reference.id || '#', { text: 'New Node' });
           }
         },
       },
@@ -174,7 +174,7 @@ export class AppComponent {
         action: (data) => {
           const tree = this.wrapperTree;
           if (tree) {
-            tree.renameNode(data.reference.id, 'Renamed');
+            tree.rename(data.reference.id, 'Renamed');
           }
         },
       },
@@ -184,7 +184,7 @@ export class AppComponent {
         action: (data) => {
           const tree = this.wrapperTree;
           if (tree) {
-            tree.deleteNode(data.reference.id);
+            tree.remove(data.reference.id);
           }
         },
       },

@@ -52,17 +52,17 @@ export class WholerowDirective implements OnChanges {
     if (this._wholerowEl) {
       return;
     }
-    const div = this._renderer.createElement('i') as HTMLElement;
-    this._renderer.addClass(div, 'jstree-wholerow');
-    this._renderer.setAttribute(div, 'role', 'presentation');
+    const el = this._renderer.createElement('i') as HTMLElement;
+    this._renderer.addClass(el, 'jstree-wholerow');
+    this._renderer.setAttribute(el, 'role', 'presentation');
     // Insert as the first child of the host element
     const firstChild = this._el.nativeElement.firstChild;
     if (firstChild) {
-      this._renderer.insertBefore(this._el.nativeElement, div, firstChild);
+      this._renderer.insertBefore(this._el.nativeElement, el, firstChild);
     } else {
-      this._renderer.appendChild(this._el.nativeElement, div);
+      this._renderer.appendChild(this._el.nativeElement, el);
     }
-    this._wholerowEl = div;
+    this._wholerowEl = el;
   }
 
   private _removeWholerow(): void {

@@ -137,17 +137,42 @@ export class MyComponent {
 
 ### Programmatic access
 
-Use `@ViewChild` to call methods directly on the component:
+Use `@ViewChild` to call methods directly on the component.
+Note: public methods are named with simple verbs to avoid TypeScript naming conflicts with `@Output()` EventEmitters:
 
 ```typescript
 @ViewChild(JstreeComponent) tree!: JstreeComponent;
 
 addNode(): void {
-  const id = this.tree.createNode('#', { text: 'New Node' });
+  const id = this.tree.addNode('#', { text: 'New Node' });
 }
 
 openAll(): void {
   this.tree.openAll();
+}
+
+expandNode(id: string): void {
+  this.tree.expand(id);     // expands (opens) a single node
+}
+
+collapseNode(id: string): void {
+  this.tree.collapse(id);   // collapses (closes) a single node
+}
+
+selectById(id: string): void {
+  this.tree.select(id);     // select a node
+}
+
+clearSelection(): void {
+  this.tree.clearSelection();
+}
+
+renameNode(id: string): void {
+  this.tree.rename(id, 'New Name');
+}
+
+deleteNode(id: string): void {
+  this.tree.remove(id);
 }
 
 search(str: string): void {

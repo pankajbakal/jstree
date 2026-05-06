@@ -37,6 +37,17 @@ export class ContextmenuDirective implements OnDestroy {
     | ((node: JsTreeNode) => Record<string, JsTreeContextMenuItem>)
     | null = null;
 
+  /**
+   * Optional resolver called with a node ID to look up the full node object
+   * from the application's data source.  When provided, this is always
+   * preferred over DOM-based node reconstruction.
+   *
+   * ```typescript
+   * [nodeResolver]="(id) => treeService.findNode(id)"
+   * ```
+   */
+  @Input() nodeResolver: ((nodeId: string) => JsTreeNode | null) | null = null;
+
   /** Emits when a menu item is activated. */
   @Output() menuItemClicked = new EventEmitter<{
     item: JsTreeContextMenuItem;
@@ -63,12 +74,23 @@ export class ContextmenuDirective implements OnDestroy {
   @HostListener('contextmenu', ['$event'])
   onContextMenu(event: MouseEvent): void {
     event.preventDefault();
-    // Try to find a node reference from the event target
+    // Find the nearest <li role="treeitem"> to identify which node was clicked
     const anchor = (event.target as HTMLElement).closest('.jstree-anchor');
-    // In the native tree, the node id is on the parent <li>
-    const li = anchor?.closest('li[role="treeitem"]');
+    const li = anchor?.closest('li[role="treeitem"]') as HTMLElement | null;
     const nodeId = li?.id ?? null;
-    this._activeNode = nodeId ? ({ id: nodeId, text: li?.querySelector('.jstree-anchor')?.textContent ?? '' } as JsTreeNode) : null;
+
+    if (nodeId) {
+      // Prefer the injected resolver (has access to full node data) over DOM
+      this._activeNode = this.nodeResolver
+        ? this.nodeResolver(nodeId)
+        : {
+            id: nodeId,
+            text: (li?.querySelector('.jstree-anchor') as HTMLElement | null)
+              ?.textContent?.trim() ?? '',
+          };
+    } else {
+      this._activeNode = null;
+    }
 
     this._show(event.clientX, event.clientY, this._activeNode);
   }

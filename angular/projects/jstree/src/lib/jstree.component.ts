@@ -194,43 +194,55 @@ export class JstreeComponent implements AfterViewInit, OnChanges, OnDestroy {
     $(this._treeEl).jstree('refresh', skipLoading, forgetState);
   }
 
-  /** Open a node by ID. */
-  openNode(nodeId: string, callback?: () => void): void {
+  /**
+   * Open (expand) a node by ID.
+   * Note: named `expand` to avoid a naming conflict with the `openNode` @Output EventEmitter.
+   */
+  expand(nodeId: string, callback?: () => void): void {
     $(this._treeEl).jstree('open_node', nodeId, callback);
   }
 
-  /** Close a node by ID. */
-  closeNode(nodeId: string, callback?: () => void): void {
+  /**
+   * Close (collapse) a node by ID.
+   * Note: named `collapse` to avoid a naming conflict with the `closeNode` @Output EventEmitter.
+   */
+  collapse(nodeId: string, callback?: () => void): void {
     $(this._treeEl).jstree('close_node', nodeId, callback);
   }
 
-  /** Toggle a node by ID. */
-  toggleNode(nodeId: string): void {
+  /** Toggle a node open/closed by ID. */
+  toggle(nodeId: string): void {
     $(this._treeEl).jstree('toggle_node', nodeId);
   }
 
-  /** Open all nodes. */
+  /** Open all nodes (optionally under `nodeId`). */
   openAll(nodeId?: string, animation?: number): void {
     $(this._treeEl).jstree('open_all', nodeId, animation);
   }
 
-  /** Close all nodes. */
+  /** Close all nodes (optionally under `nodeId`). */
   closeAll(nodeId?: string, animation?: number): void {
     $(this._treeEl).jstree('close_all', nodeId, animation);
   }
 
-  /** Select a node by ID. */
-  selectNode(nodeId: string, suppressEvent = false): void {
+  /**
+   * Select a node by ID.
+   * Note: named `select` to avoid a naming conflict with the `selectNode` @Output EventEmitter.
+   */
+  select(nodeId: string, suppressEvent = false): void {
     $(this._treeEl).jstree('select_node', nodeId, suppressEvent);
   }
 
-  /** Deselect a node by ID. */
-  deselectNode(nodeId: string, suppressEvent = false): void {
+  /**
+   * Deselect a node by ID.
+   * Note: named `deselect` to avoid a naming conflict with the `deselectNode` @Output EventEmitter.
+   */
+  deselect(nodeId: string, suppressEvent = false): void {
     $(this._treeEl).jstree('deselect_node', nodeId, suppressEvent);
   }
 
   /** Deselect all nodes. */
-  deselectAll(suppressEvent = false): void {
+  clearSelection(suppressEvent = false): void {
     $(this._treeEl).jstree('deselect_all', suppressEvent);
   }
 
@@ -244,8 +256,11 @@ export class JstreeComponent implements AfterViewInit, OnChanges, OnDestroy {
     return $(this._treeEl).jstree('get_node', nodeId);
   }
 
-  /** Create a new node. Returns the new node ID or false. */
-  createNode(
+  /**
+   * Create a new node. Returns the new node ID or false.
+   * Note: named `addNode` to avoid a naming conflict with the `createNode` @Output EventEmitter.
+   */
+  addNode(
     parentId: string,
     node: Partial<JsTreeNode>,
     position: 'last' | 'first' | number = 'last',
@@ -254,13 +269,19 @@ export class JstreeComponent implements AfterViewInit, OnChanges, OnDestroy {
     return $(this._treeEl).jstree('create_node', parentId, node, position, callback);
   }
 
-  /** Rename a node. */
-  renameNode(nodeId: string, text: string): void {
+  /**
+   * Rename a node.
+   * Note: named `rename` to avoid a naming conflict with the `renameNode` @Output EventEmitter.
+   */
+  rename(nodeId: string, text: string): void {
     $(this._treeEl).jstree('rename_node', nodeId, text);
   }
 
-  /** Delete a node by ID. */
-  deleteNode(nodeId: string): void {
+  /**
+   * Delete a node by ID.
+   * Note: named `remove` to avoid a naming conflict with the `deleteNode` @Output EventEmitter.
+   */
+  remove(nodeId: string): void {
     $(this._treeEl).jstree('delete_node', nodeId);
   }
 

@@ -216,21 +216,21 @@ describe('JstreeComponent', () => {
     expect(node).toBeTruthy();
   });
 
-  it('createNode() should delegate to jstree create_node', () => {
+  it('addNode() should delegate to jstree create_node', () => {
     fixture.detectChanges();
-    const id = component.createNode('#', { text: 'New' });
+    const id = component.addNode('#', { text: 'New' });
     expect(id).toEqual('new_id');
   });
 
-  it('renameNode() should delegate to jstree rename_node', () => {
+  it('rename() should delegate to jstree rename_node', () => {
     fixture.detectChanges();
-    component.renameNode('node_1', 'Renamed');
+    component.rename('node_1', 'Renamed');
     expect(stubInstance['rename_node']).toHaveBeenCalledWith('node_1', 'Renamed');
   });
 
-  it('deleteNode() should delegate to jstree delete_node', () => {
+  it('remove() should delegate to jstree delete_node', () => {
     fixture.detectChanges();
-    component.deleteNode('node_1');
+    component.remove('node_1');
     expect(stubInstance['delete_node']).toHaveBeenCalledWith('node_1');
   });
 });
