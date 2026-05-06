@@ -22,6 +22,7 @@ import {
  */
 @Directive({
   selector: '[jsTreeWholerow]',
+  standalone: false,
 })
 export class WholerowDirective implements OnChanges {
   /** Enable or disable the whole-row highlight. Default: true. */

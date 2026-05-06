@@ -489,4 +489,95 @@ describe('NativeTreeService', () => {
     service.deselectAll();
     expect(service.getSelected().size).toBe(0);
   });
+
+  it('updateNodeChildren() replaces lazy-sentinel with loaded children', () => {
+    service.setNodes([
+      { id: 'lazy', text: 'Lazy', children: true as unknown as JsTreeNode[] },
+    ]);
+    const loaded: JsTreeNode[] = [{ id: 'c1', text: 'C1' }];
+    service.updateNodeChildren('lazy', loaded);
+    const node = service.findNode('lazy');
+    expect(Array.isArray(node?.children)).toBeTrue();
+    expect((node?.children as JsTreeNode[])[0].id).toBe('c1');
+    expect(node?.state?.['loaded']).toBeTrue();
+  });
+
+  it('moveNode() moves a node to the root level', () => {
+    service.moveNode('child1', '#', 0);
+    const roots = service.getNodes().map((n) => n.id);
+    expect(roots).toContain('child1');
+    expect(service.findNode('child1', service.findNode('root')?.children as JsTreeNode[]))
+      .toBeNull();
+  });
+
+  it('moveNode() moves a node into a parent', () => {
+    service.moveNode('leaf', 'root', 0);
+    const root = service.findNode('root');
+    const children = root?.children as JsTreeNode[];
+    expect(children[0].id).toBe('leaf');
+    expect(service.getNodes().length).toBe(1);
+  });
+
+  it('moveNode() is a no-op for a missing node', () => {
+    const before = service.getNodes().length;
+    service.moveNode('does-not-exist', '#', 0);
+    expect(service.getNodes().length).toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FlattenTreePipe
+// ---------------------------------------------------------------------------
+
+import { FlattenTreePipe } from './plugins/flatten-tree.pipe';
+
+describe('FlattenTreePipe', () => {
+  let pipe: FlattenTreePipe;
+
+  const tree: JsTreeNode[] = [
+    {
+      id: 'a',
+      text: 'A',
+      children: [
+        { id: 'a1', text: 'A1' },
+        { id: 'a2', text: 'A2' },
+      ],
+    },
+    { id: 'b', text: 'B' },
+  ];
+
+  beforeEach(() => {
+    pipe = new FlattenTreePipe();
+  });
+
+  it('should be created', () => expect(pipe).toBeTruthy());
+
+  it('shows only root nodes when none are open', () => {
+    const result = pipe.transform(tree, new Set());
+    expect(result.length).toBe(2);
+    expect(result.map((f) => f.node.id)).toEqual(['a', 'b']);
+  });
+
+  it('includes children when parent is open', () => {
+    const result = pipe.transform(tree, new Set(['a']));
+    expect(result.length).toBe(4);
+    expect(result[1].node.id).toBe('a1');
+    expect(result[1].depth).toBe(1);
+  });
+
+  it('marks hasChildren correctly', () => {
+    const result = pipe.transform(tree, new Set());
+    expect(result[0].hasChildren).toBeTrue();
+    expect(result[1].hasChildren).toBeFalse();
+  });
+
+  it('marks isOpen correctly', () => {
+    const result = pipe.transform(tree, new Set(['a']));
+    expect(result[0].isOpen).toBeTrue();
+    expect(result[1].isOpen).toBeFalse();
+  });
+
+  it('returns empty array for null input', () => {
+    expect(pipe.transform(null)).toEqual([]);
+  });
 });

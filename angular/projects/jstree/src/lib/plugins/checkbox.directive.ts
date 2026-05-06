@@ -32,7 +32,7 @@ export type CheckState = 'checked' | 'unchecked' | 'indeterminate';
  * ></jstree-native-tree>
  * ```
  */
-@Directive({ selector: '[jsTreeCheckbox]' })
+@Directive({ selector: '[jsTreeCheckbox]', standalone: false })
 export class CheckboxDirective implements OnChanges {
   /** Initially checked node IDs. */
   @Input() checkedIds: Set<string> = new Set();

@@ -34,7 +34,7 @@ export interface SearchPipeOptions {
  * <jstree-native-tree [nodes]="nodes | jsTreeSearch : searchStr"></jstree-native-tree>
  * ```
  */
-@Pipe({ name: 'jsTreeSearch', pure: true })
+@Pipe({ name: 'jsTreeSearch', pure: true, standalone: false })
 export class JstreeSearchPipe implements PipeTransform {
   /**
    * @param nodes   Root node array (hierarchical).

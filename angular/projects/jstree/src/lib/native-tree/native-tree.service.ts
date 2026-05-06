@@ -125,6 +125,52 @@ export class NativeTreeService {
     this._selected$.next(new Set());
   }
 
+  /**
+   * Update the children of a node by ID and mark it as loaded.
+   * Designed for lazy-load: after fetching children from a server, call this
+   * to replace the sentinel `children: true` with the actual array.
+   */
+  updateNodeChildren(nodeId: string, children: JsTreeNode[]): void {
+    const nodes = structuredClone(this._nodes$.getValue());
+    const node = this.findNode(nodeId, nodes);
+    if (node) {
+      node.children = children;
+      node.state = { ...node.state, loaded: true };
+      this._nodes$.next(nodes);
+    }
+  }
+
+  /**
+   * Move a node to a new parent at a given position.
+   * Pass `'#'` as `newParentId` to move to the root level.
+   * Silently no-ops if the source node is not found.
+   */
+  moveNode(nodeId: string, newParentId: string, position: number): void {
+    const nodes = structuredClone(this._nodes$.getValue());
+    const node = this.findNode(nodeId, nodes);
+    if (!node) {
+      return;
+    }
+    const cloned = structuredClone(node);
+    const pruned = this._removeById(nodeId, nodes);
+
+    if (newParentId === '#') {
+      const clampedPos = Math.min(position, pruned.length);
+      pruned.splice(clampedPos, 0, cloned);
+    } else {
+      const parent = this.findNode(newParentId, pruned);
+      if (parent) {
+        if (!Array.isArray(parent.children)) {
+          parent.children = [];
+        }
+        const siblings = parent.children as JsTreeNode[];
+        const clampedPos = Math.min(position, siblings.length);
+        siblings.splice(clampedPos, 0, cloned);
+      }
+    }
+    this._nodes$.next(pruned);
+  }
+
   // ------------------------------------------------------------------
   // Private helpers
   // ------------------------------------------------------------------

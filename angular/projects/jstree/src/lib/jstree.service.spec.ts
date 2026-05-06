@@ -38,14 +38,13 @@ const instanceMethods: Record<string, jasmine.Spy> = {
 };
 
 const jqueryChain = {
-  jstree: (method: unknown) => {
+  jstree: function(this: unknown, method: unknown, ...rest: unknown[]) {
     if (method === true) {
       return instanceMethods;
     }
     if (typeof method === 'string') {
       const fn = instanceMethods[method];
       if (fn) {
-        const rest = Array.from(arguments).slice(1);
         return fn(...rest);
       }
     }
@@ -60,6 +59,8 @@ describe('JstreeService', () => {
   let mockEl: ElementRef<HTMLElement>;
 
   beforeEach(() => {
+    // Re-install mock before each test to avoid cross-spec contamination.
+    (window as unknown as Record<string, unknown>)['$'] = (_el: unknown) => jqueryChain;
     TestBed.configureTestingModule({ providers: [JstreeService] });
     service = TestBed.inject(JstreeService);
     mockEl = new ElementRef(document.createElement('div'));

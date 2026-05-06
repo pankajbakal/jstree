@@ -2,13 +2,17 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
   Output,
   SimpleChanges,
   TrackByFunction,
+  ViewChild,
 } from '@angular/core';
+import { animate, style, transition, trigger } from '@angular/animations';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { JsTreeNode } from '../jstree.models';
 
 /**
@@ -32,18 +36,19 @@ import { JsTreeNode } from '../jstree.models';
       (contextmenu)="handleContextMenu($event)"
       (keydown)="handleKeydown($event)"
       [tabindex]="isSelected ? 0 : -1"
+      cdkDrag
+      [cdkDragData]="node"
+      [cdkDragDisabled]="!dndEnabled"
     >
-      <!-- Indentation spacers for nested levels are handled by CSS via
-           the recursive nesting of <ul> elements. -->
-
       <!-- Toggle icon -->
       <i
-        *ngIf="hasChildren"
+        *ngIf="hasChildren || isLoading"
         class="jstree-icon jstree-ocl"
+        [class.jstree-loading]="isLoading"
         role="presentation"
         (click)="toggle($event)"
       ></i>
-      <i *ngIf="!hasChildren" class="jstree-icon jstree-ocl" role="presentation"></i>
+      <i *ngIf="!hasChildren && !isLoading" class="jstree-icon jstree-ocl" role="presentation"></i>
 
       <!-- Node icon -->
       <i
@@ -54,8 +59,21 @@ import { JsTreeNode } from '../jstree.models';
         role="presentation"
       ></i>
 
-      <!-- Node anchor -->
+      <!-- Inline rename input (shown only when this node is in rename mode) -->
+      <input
+        *ngIf="isRenaming"
+        #renameInput
+        class="jstree-rename-input"
+        [value]="node.text"
+        (keydown.enter)="onRenameConfirm($event)"
+        (keydown.escape)="onRenameCancel()"
+        (blur)="onRenameConfirm($event)"
+        (click)="$event.stopPropagation()"
+      />
+
+      <!-- Node anchor (hidden while renaming) -->
       <a
+        *ngIf="!isRenaming"
         class="jstree-anchor"
         [class.jstree-clicked]="isSelected"
         [class.jstree-disabled]="isDisabled"
@@ -68,8 +86,13 @@ import { JsTreeNode } from '../jstree.models';
       <!-- Children -->
       <ul
         *ngIf="hasChildren && isOpen"
+        @expandCollapse
         role="group"
         class="jstree-children"
+        cdkDropList
+        [cdkDropListData]="node.id ?? node.text"
+        [cdkDropListDisabled]="!dndEnabled"
+        (cdkDropListDropped)="dropNode.emit($event)"
       >
         <jstree-native-node
           *ngFor="let child of children; trackBy: trackById"
@@ -77,21 +100,69 @@ import { JsTreeNode } from '../jstree.models';
           [multiSelect]="multiSelect"
           [selectedIds]="selectedIds"
           [disabledIds]="disabledIds"
+          [renamingId]="renamingId"
+          [loadingId]="loadingId"
+          [dndEnabled]="dndEnabled"
           (nodeSelected)="nodeSelected.emit($event)"
           (nodeToggled)="nodeToggled.emit($event)"
           (nodeContextMenu)="nodeContextMenu.emit($event)"
           (nodeDblClick)="nodeDblClick.emit($event)"
+          (loadChildrenRequest)="loadChildrenRequest.emit($event)"
+          (nodeRenamed)="nodeRenamed.emit($event)"
+          (dropNode)="dropNode.emit($event)"
         ></jstree-native-node>
       </ul>
     </li>
   `,
+  styles: [`
+    .jstree-rename-input {
+      border: 1px solid #aaa;
+      padding: 1px 4px;
+      font-size: inherit;
+      font-family: inherit;
+      outline: none;
+      width: 120px;
+    }
+    .jstree-loading::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #ccc;
+      border-top-color: #888;
+      border-radius: 50%;
+      animation: jstree-spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes jstree-spin {
+      to { transform: rotate(360deg); }
+    }
+  `],
+  animations: [
+    trigger('expandCollapse', [
+      transition(':enter', [
+        style({ height: 0, overflow: 'hidden', opacity: 0 }),
+        animate('200ms ease-out', style({ height: '*', overflow: 'hidden', opacity: 1 })),
+      ]),
+      transition(':leave', [
+        animate('150ms ease-in', style({ height: 0, overflow: 'hidden', opacity: 0 })),
+      ]),
+    ]),
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class NativeTreeNodeComponent implements OnChanges {
   @Input() node!: JsTreeNode;
   @Input() multiSelect = false;
   @Input() selectedIds: Set<string> = new Set();
   @Input() disabledIds: Set<string> = new Set();
+  /** ID of the node currently in rename mode (`null` = none). */
+  @Input() renamingId: string | null = null;
+  /** ID of the node whose children are being loaded (`null` = none). */
+  @Input() loadingId: string | null = null;
+  /** Enable CDK drag-and-drop. */
+  @Input() dndEnabled = false;
 
   @Output() nodeSelected = new EventEmitter<{
     node: JsTreeNode;
@@ -101,6 +172,18 @@ export class NativeTreeNodeComponent implements OnChanges {
   @Output() nodeToggled = new EventEmitter<{ node: JsTreeNode; opened: boolean }>();
   @Output() nodeContextMenu = new EventEmitter<{ node: JsTreeNode; event: MouseEvent }>();
   @Output() nodeDblClick = new EventEmitter<{ node: JsTreeNode; event: MouseEvent }>();
+  /** Emits when a node with `children === true` is first expanded (lazy-load). */
+  @Output() loadChildrenRequest = new EventEmitter<JsTreeNode>();
+  /** Emits when a rename is confirmed or cancelled. */
+  @Output() nodeRenamed = new EventEmitter<{
+    node: JsTreeNode;
+    oldText: string;
+    newText: string;
+  }>();
+  /** Bubbles CDK drop events from nested lists. */
+  @Output() dropNode = new EventEmitter<CdkDragDrop<string>>();
+
+  @ViewChild('renameInput') renameInputRef?: ElementRef<HTMLInputElement>;
 
   isOpen = false;
   children: JsTreeNode[] = [];
@@ -115,6 +198,9 @@ export class NativeTreeNodeComponent implements OnChanges {
       this.children = Array.isArray(this.node.children)
         ? (this.node.children as JsTreeNode[])
         : [];
+    }
+    if (changes['renamingId'] && this.isRenaming) {
+      setTimeout(() => this.renameInputRef?.nativeElement.select(), 0);
     }
   }
 
@@ -136,15 +222,22 @@ export class NativeTreeNodeComponent implements OnChanges {
     );
   }
 
+  get isRenaming(): boolean {
+    return this.renamingId === (this.node.id ?? this.node.text);
+  }
+
+  get isLoading(): boolean {
+    return this.loadingId === (this.node.id ?? this.node.text);
+  }
+
   get liClasses(): string {
     const base = 'jstree-node';
     const open = this.isOpen ? ' jstree-open' : ' jstree-closed';
     const leaf = !this.hasChildren ? ' jstree-leaf' : '';
-    const last = ' jstree-last'; // simplified; a real impl would track sibling position
+    const last = ' jstree-last';
     return base + (this.hasChildren ? open : leaf) + last;
   }
 
-  /** Returns a CSS class string if the icon is a class name. */
   get iconClass(): string {
     const icon = this.node.icon;
     if (!icon || typeof icon !== 'string') {
@@ -155,7 +248,6 @@ export class NativeTreeNodeComponent implements OnChanges {
       : icon;
   }
 
-  /** Returns a CSS `background-image` value if the icon is an image URL. */
   get iconImage(): string | null {
     const icon = this.node.icon;
     if (
@@ -170,6 +262,11 @@ export class NativeTreeNodeComponent implements OnChanges {
   toggle(event: Event): void {
     event.stopPropagation();
     if (this.isDisabled) {
+      return;
+    }
+    // Lazy-load: emit a request and let the parent handle it
+    if (!this.isOpen && this.node.children === true) {
+      this.loadChildrenRequest.emit(this.node);
       return;
     }
     this.isOpen = !this.isOpen;
@@ -211,7 +308,6 @@ export class NativeTreeNodeComponent implements OnChanges {
   handleDblClick(event: MouseEvent): void {
     event.preventDefault();
     this.nodeDblClick.emit({ node: this.node, event });
-    // Double-click also toggles open/close
     this.toggle(event);
   }
 
@@ -242,5 +338,17 @@ export class NativeTreeNodeComponent implements OnChanges {
       default:
         break;
     }
+  }
+
+  onRenameConfirm(event: Event): void {
+    event.stopPropagation();
+    const input = event.target as HTMLInputElement;
+    const newText = input.value.trim();
+    const oldText = this.node.text;
+    this.nodeRenamed.emit({ node: this.node, oldText, newText: newText || oldText });
+  }
+
+  onRenameCancel(): void {
+    this.nodeRenamed.emit({ node: this.node, oldText: this.node.text, newText: this.node.text });
   }
 }

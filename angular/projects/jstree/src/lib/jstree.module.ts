@@ -1,5 +1,8 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { OverlayModule } from '@angular/cdk/overlay';
 
 import { JstreeComponent } from './jstree.component';
 import { JstreeService } from './jstree.service';
@@ -12,6 +15,7 @@ import { WholerowDirective } from './plugins/wholerow.directive';
 import { ContextmenuDirective } from './plugins/contextmenu.directive';
 import { ConditionalSelectDirective } from './plugins/conditionalselect.directive';
 import { JstreeSearchPipe } from './plugins/search.pipe';
+import { FlattenTreePipe } from './plugins/flatten-tree.pipe';
 
 /**
  * ## JstreeModule
@@ -45,8 +49,14 @@ import { JstreeSearchPipe } from './plugins/search.pipe';
     ContextmenuDirective,
     ConditionalSelectDirective,
     JstreeSearchPipe,
+    FlattenTreePipe,
   ],
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    BrowserAnimationsModule,
+    DragDropModule,
+    OverlayModule,
+  ],
   exports: [
     // Strategy A
     JstreeComponent,
@@ -58,6 +68,10 @@ import { JstreeSearchPipe } from './plugins/search.pipe';
     ContextmenuDirective,
     ConditionalSelectDirective,
     JstreeSearchPipe,
+    FlattenTreePipe,
+    // CDK re-exports so consumers can use them without adding their own imports
+    DragDropModule,
+    OverlayModule,
   ],
   providers: [
     JstreeService,

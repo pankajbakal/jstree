@@ -25,6 +25,7 @@ export * from './lib/plugins/state.service';
 export * from './lib/plugins/conditionalselect.directive';
 export * from './lib/plugins/types.service';
 export * from './lib/plugins/search.pipe';
+export * from './lib/plugins/flatten-tree.pipe';
 export * from './lib/plugins/wholerow.directive';
 export * from './lib/plugins/massload.service';
 export * from './lib/plugins/checkbox.directive';

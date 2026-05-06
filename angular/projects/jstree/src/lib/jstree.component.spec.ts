@@ -37,15 +37,14 @@ const stubInstance: JstreeStub = {
 /** Event callbacks registered via .on() so tests can trigger them. */
 const eventHandlers: Record<string, Function> = {};
 
-const jqueryFn = jasmine.createSpy('$fn.jstree').and.callFake((arg: unknown) => {
+const jqueryFn = jasmine.createSpy('$fn.jstree').and.callFake(function(this: unknown, arg: unknown, ...rest: unknown[]) {
   if (arg === true) {
     return stubInstance;
   }
   if (typeof arg === 'string') {
     const method = arg as string;
-    const args = Array.from(arguments).slice(1);
     if (method in stubInstance) {
-      return (stubInstance[method] as Function)(...args);
+      return (stubInstance[method] as (...a: unknown[]) => unknown)(...rest);
     }
     return undefined;
   }
@@ -62,12 +61,11 @@ const mockJqueryChain = {
   off: () => mockJqueryChain,
 };
 
-// Install global $ mock
-(window as unknown as Record<string, unknown>)['$'] = (el: unknown) => {
-  void el;
-  return mockJqueryChain;
-};
-(window as unknown as Record<string, unknown>)['$']['fn'] = { jstree: jqueryFn };
+// Create the mock `$` function with `.fn.jstree` attached.
+const mockJQueryFactory = Object.assign(
+  (el: unknown) => { void el; return mockJqueryChain; },
+  { fn: { jstree: jqueryFn } }
+);
 
 // ---------------------------------------------------------------------------
 // JstreeComponent tests
@@ -92,6 +90,9 @@ describe('JstreeComponent', () => {
   };
 
   beforeEach(async () => {
+    // Re-install mock before each test to avoid cross-spec contamination.
+    (window as unknown as Record<string, unknown>)['$'] = mockJQueryFactory;
+
     await TestBed.configureTestingModule({
       declarations: [JstreeComponent],
     }).compileComponents();
@@ -248,6 +249,7 @@ describe('JstreeComponent', () => {
     ></jstree-tree>
   `,
   changeDetection: ChangeDetectionStrategy.Default,
+  standalone: false,
 })
 class TestHostComponent {
   cfg: JsTreeConfig = { plugins: ['checkbox'] };
@@ -260,6 +262,9 @@ describe('JstreeComponent (host)', () => {
   let hostFixture: ComponentFixture<TestHostComponent>;
 
   beforeEach(async () => {
+    // Re-install mock before each test.
+    (window as unknown as Record<string, unknown>)['$'] = mockJQueryFactory;
+
     await TestBed.configureTestingModule({
       declarations: [JstreeComponent, TestHostComponent],
     }).compileComponents();

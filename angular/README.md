@@ -219,6 +219,8 @@ No jQuery, no external DOM manipulation – pure Angular with `ChangeDetectionSt
 | `multiSelect` | `boolean` | `false` | Allow Ctrl/Meta+click multi-select |
 | `selectedIds` | `Set<string>` | `new Set()` | Pre-selected node IDs |
 | `disabledIds` | `Set<string>` | `new Set()` | Pre-disabled node IDs |
+| `loadChildren` | `(node) => Observable<JsTreeNode[]>` \| `null` | `null` | Lazy-load callback for nodes with `children: true` |
+| `dndEnabled` | `boolean` | `false` | Enable CDK Drag-Drop reordering |
 
 ### Outputs
 
@@ -228,6 +230,51 @@ No jQuery, no external DOM manipulation – pure Angular with `ChangeDetectionSt
 | `nodeToggled` | `{ node, opened: boolean }` |
 | `nodeContextMenu` | `{ node, event: MouseEvent }` |
 | `nodeDblClick` | `{ node, event: MouseEvent }` |
+| `nodeRenamed` | `{ node, oldText: string, newText: string }` |
+| `dropNode` | `DropResult` |
+
+### Inline rename
+
+```typescript
+// In your component class
+@ViewChild(NativeTreeComponent) tree!: NativeTreeComponent;
+
+startRename(nodeId: string) {
+  this.tree.startRename(nodeId);
+}
+```
+
+```html
+<!-- Double-click a node then confirm with Enter, cancel with Esc -->
+<jstree-native-tree
+  [nodes]="nodes"
+  (nodeRenamed)="onRenamed($event)"
+></jstree-native-tree>
+```
+
+### Lazy loading
+
+```typescript
+loadChildren = (node: JsTreeNode): Observable<JsTreeNode[]> =>
+  this.http.get<JsTreeNode[]>(`/api/nodes/${node.id}/children`);
+```
+
+```html
+<jstree-native-tree [nodes]="nodes" [loadChildren]="loadChildren"></jstree-native-tree>
+```
+
+Nodes with `children: true` show a CSS spinner when first expanded. The tree
+automatically patches the node's children and opens it.
+
+### Drag and drop
+
+```html
+<jstree-native-tree
+  [nodes]="nodes"
+  [dndEnabled]="true"
+  (dropNode)="onDrop($event)"
+></jstree-native-tree>
+```
 
 ### Search filtering (pipe)
 
@@ -235,6 +282,36 @@ No jQuery, no external DOM manipulation – pure Angular with `ChangeDetectionSt
 <jstree-native-tree
   [nodes]="nodes | jsTreeSearch : searchStr : { fuzzy: true }"
 ></jstree-native-tree>
+```
+
+### FlattenTreePipe (`jsTreeFlatten`) – virtual scrolling helper
+
+```html
+<!-- Use with Angular CDK CdkVirtualScrollViewport -->
+<cdk-virtual-scroll-viewport itemSize="24" style="height: 400px">
+  <ng-container *cdkVirtualFor="let flat of nodes | jsTreeFlatten : openIds">
+    <div [style.padding-left.px]="flat.depth * 16">
+      <button *ngIf="flat.hasChildren" (click)="toggle(flat.node)">
+        {{ flat.isOpen ? '▼' : '▶' }}
+      </button>
+      {{ flat.node.text }}
+    </div>
+  </ng-container>
+</cdk-virtual-scroll-viewport>
+```
+
+Manage `openIds` as a `Set<string>` in your component (create a new `Set` on
+each toggle to trigger the pure pipe):
+
+```typescript
+openIds = new Set<string>();
+
+toggle(node: JsTreeNode) {
+  const id = node.id ?? node.text;
+  const next = new Set(this.openIds);
+  next.has(id) ? next.delete(id) : next.add(id);
+  this.openIds = next;
+}
 ```
 
 ---
@@ -360,6 +437,19 @@ dndService.notifyDrop({ nodes, newParentId: '#', ... });
 dndService.drop$.subscribe(result => applyMove(result));
 ```
 
+### NativeTreeService (programmatic API)
+
+`NativeTreeService` is provided per-component instance via the component's `providers` array.
+
+```typescript
+// Lazy-load: replace children after async fetch
+service.updateNodeChildren('parent-id', loadedChildren);
+
+// Move a node – '#' means root level
+service.moveNode('nodeId', '#', 0);         // move to root, position 0
+service.moveNode('nodeId', 'parentId', 2);  // move into parent, position 2
+```
+
 ---
 
 ## Building the library
@@ -389,14 +479,15 @@ npm test              # runs karma/jasmine tests for the library
 
 ## Roadmap (completing Strategy B)
 
-- [ ] Virtual scrolling for very large trees (Angular CDK `ScrollingModule`)
-- [ ] Full CDK Drag-Drop integration in `NativeTreeComponent`
-- [ ] CDK Overlay for `ContextmenuDirective`
-- [ ] Inline rename editing
-- [ ] Lazy-load integration with `MassLoadService`
-- [ ] Animations via Angular `AnimationBuilder`
-- [ ] SCSS theme (`@use 'jstree/src/themes/default/style.css'` port)
-- [ ] Storybook documentation
+- [x] **CDK Drag-Drop integration** – `NativeTreeComponent` uses `cdkDropListGroup`, `cdkDropList`, and `cdkDrag`. Enable with `[dndEnabled]="true"`. Listen for reorders via `(dropNode)`.
+- [x] **CDK Overlay for `ContextmenuDirective`** – context menu is positioned and managed by `@angular/cdk/overlay`, with automatic viewport-edge adjustment and scroll-close strategy.
+- [x] **Inline rename editing** – call `tree.startRename(id)` to enter edit mode; `(nodeRenamed)` emits `{ node, oldText, newText }` when committed.
+- [x] **Lazy-load integration** – pass `[loadChildren]="fn"` where `fn: (node) => Observable<JsTreeNode[]>`. Nodes with `children: true` show a CSS spinner until children load.
+- [x] **Animations via `@angular/animations`** – expand/collapse transitions on child `<ul>` elements (200 ms ease-out enter, 150 ms ease-in leave).
+- [x] **`FlattenTreePipe` (`jsTreeFlatten`)** – exported pipe that flattens a hierarchical tree to `FlatTreeNode[]` for use with `CdkVirtualScrollViewport`.
+- [ ] **Virtual scrolling** – use `FlattenTreePipe` + `cdkVirtualFor` in the consumer app (see pipe docs above).
+- [ ] **SCSS theme** – compiled CSS lives in `dist/themes/`; a customisable SCSS source is pending.
+- [ ] **Storybook documentation**
 
 ---
 

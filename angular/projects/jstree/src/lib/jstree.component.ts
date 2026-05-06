@@ -53,6 +53,7 @@ declare const $: any; // jQuery injected via global script
   selector: 'jstree-tree',
   template: '<div #treeContainer></div>',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class JstreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   // ------------------------------------------------------------------

@@ -25,6 +25,7 @@ import { JsTreeNode } from '../jstree.models';
  */
 @Directive({
   selector: '[jsTreeConditionalSelect]',
+  standalone: false,
 })
 export class ConditionalSelectDirective {
   /**
