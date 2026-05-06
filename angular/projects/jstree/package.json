@@ -1,0 +1,13 @@
+{
+  "name": "@jstree/angular",
+  "version": "3.3.17",
+  "description": "Angular wrapper and native component for jsTree",
+  "peerDependencies": {
+    "@angular/common": ">=19.2.20",
+    "@angular/core": ">=19.2.20",
+    "@angular/cdk": ">=19.2.20",
+    "jquery": "^3.5.0",
+    "jstree": "^3.3.17"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,75 @@
+<h1>jsTree Angular Demo</h1>
+
+<div class="demo-container">
+
+  <!-- ============================================================
+       STRATEGY A – jQuery wrapper
+       ============================================================ -->
+  <div class="panel">
+    <h2>Strategy A – jQuery Wrapper (<code>&lt;jstree-tree&gt;</code>)</h2>
+
+    <p>
+      Uses the original jQuery jsTree plugin wrapped in an Angular component.
+      Right-click a node for the context menu.
+    </p>
+
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search…"
+        [(ngModel)]="wrapperSearchStr"
+        (keyup.enter)="onWrapperSearch()"
+      />
+      <button (click)="onWrapperSearch()">Search</button>
+      <button (click)="onWrapperClearSearch()">Clear</button>
+      <button (click)="onWrapperAddNode()">+ Add</button>
+    </div>
+
+    <jstree-tree
+      #wrapperTree
+      [config]="wrapperConfig"
+      (selectNode)="onWrapperSelectNode($event)"
+      (changed)="onWrapperChanged($event)"
+    ></jstree-tree>
+
+    <div class="log-box" *ngIf="wrapperLog.length">
+      <p *ngFor="let line of wrapperLog">{{ line }}</p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       STRATEGY B – Native Angular tree
+       ============================================================ -->
+  <div class="panel">
+    <h2>Strategy B – Native Angular (<code>&lt;jstree-native-tree&gt;</code>)</h2>
+
+    <p>
+      Pure Angular component, no jQuery. Supports search filtering, multi-select
+      (Ctrl+click), context menus, and keyboard navigation.
+    </p>
+
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Filter…"
+        [(ngModel)]="nativeSearchStr"
+      />
+      <button (click)="nativeSearchStr = ''">Clear</button>
+    </div>
+
+    <jstree-native-tree
+      jsTreeContextmenu
+      [contextMenuItems]="nativeContextMenuItems"
+      [nodes]="nativeNodes | jsTreeSearch : nativeSearchStr"
+      [multiSelect]="true"
+      [selectedIds]="nativeSelectedIds"
+      (nodeSelected)="onNativeNodeSelected($event)"
+      (nodeToggled)="onNativeNodeToggled($event)"
+    ></jstree-native-tree>
+
+    <div class="log-box" *ngIf="nativeLog.length">
+      <p *ngFor="let line of nativeLog">{{ line }}</p>
+    </div>
+  </div>
+
+</div>
