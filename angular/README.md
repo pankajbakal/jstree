@@ -5,6 +5,9 @@ Angular integration for [jsTree](http://jstree.com) – the jQuery tree plugin.
 This package provides **two independent integration strategies** so you can
 pick the right approach for your project:
 
+**Requires Angular ≥ 19.2.20** (Angular 17/18 have unpatched XSS vulnerabilities
+in their compiler and are no longer supported).
+
 | Strategy | Component selector | jQuery required? | When to use |
 |---|---|---|---|
 | **A – jQuery wrapper** | `<jstree-tree>` | ✅ Yes | Drop-in replacement with full jstree feature parity |

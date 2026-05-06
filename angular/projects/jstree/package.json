@@ -3,9 +3,9 @@
   "version": "3.3.17",
   "description": "Angular wrapper and native component for jsTree",
   "peerDependencies": {
-    "@angular/common": "^17.0.0",
-    "@angular/core": "^17.0.0",
-    "@angular/cdk": "^17.0.0",
+    "@angular/common": ">=19.2.20",
+    "@angular/core": ">=19.2.20",
+    "@angular/cdk": ">=19.2.20",
     "jquery": "^3.5.0",
     "jstree": "^3.3.17"
   },
